@@ -16,4 +16,5 @@
 ## Install
 ```
 eselect repository add skmdx-overlay git https://github.com/skmdx/skmdx-overlay.git
+emaint -r skmdx-overlay sync
 ```
