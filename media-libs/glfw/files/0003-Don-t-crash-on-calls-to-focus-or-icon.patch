@@ -1,0 +1,22 @@
+--- a/src/wl_window.c	2023-07-13 15:44:12.671023401 +0900
++++ b/src/wl_window.c	2023-07-13 15:47:32.633587840 +0900
+@@ -2109,8 +2109,7 @@
+ void _glfwSetWindowIconWayland(_GLFWwindow* window,
+                                int count, const GLFWimage* images)
+ {
+-    _glfwInputError(GLFW_FEATURE_UNAVAILABLE,
+-                    "Wayland: The platform does not support setting the window icon");
++    fprintf(stderr, "!!! Ignoring Error: Wayland: The platform does not support setting the window icon\n");
+ }
+ 
+ void _glfwGetWindowPosWayland(_GLFWwindow* window, int* xpos, int* ypos)
+@@ -2353,8 +2352,7 @@
+ 
+ void _glfwFocusWindowWayland(_GLFWwindow* window)
+ {
+-    _glfwInputError(GLFW_FEATURE_UNAVAILABLE,
+-                    "Wayland: The platform does not support setting the input focus");
++    fprintf(stderr, "!!! Ignoring Error: Wayland: The platform does not support setting the input focus\n");
+ }
+ 
+ void _glfwSetWindowMonitorWayland(_GLFWwindow* window,
