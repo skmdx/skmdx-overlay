@@ -3,7 +3,7 @@
 - app-i18n/cskk
 - app-i18n/fcitx-cskk
 - app-pda/adbfs-rootless
-- gui-apps/gnome-randr
+- gui-apps/gnome-randr-rust
 - media-fonts/ibm-plex-sans-jp
 - media-fonts/line-seed-jp
 - media-fonts/plemoljp
