@@ -22,16 +22,16 @@ REQUIRED_USE="|| ( qt5 qt6 )"
 
 RDEPEND="
 	qt5? (
-		>=dev-qt/qtcore-5.15.2:5=
-		>=dev-qt/qtgui-5.15.2:5=
-		>=dev-qt/qtsvg-5.15.2:5=
-		>=dev-qt/qtwayland-5.15.2:5=
-		>=dev-qt/qtwidgets-5.15.2:5=
+		>=dev-qt/qtcore-5.15.2:5
+		>=dev-qt/qtgui-5.15.2:5
+		>=dev-qt/qtsvg-5.15.2:5
+		>=dev-qt/qtwayland-5.15.2:5
+		>=dev-qt/qtwidgets-5.15.2:5
 	)
 	qt6? (
-		>=dev-qt/qtbase-6.5.0:6=[gui,widgets,wayland]
-		>=dev-qt/qtsvg-6.5.0:6=
-		>=dev-qt/qtwayland-6.5.0:6=
+		>=dev-qt/qtbase-6.5.0:6[gui,widgets,wayland]
+		>=dev-qt/qtsvg-6.5.0:6
+		>=dev-qt/qtwayland-6.5.0:6
 	)
 "
 DEPEND="${RDEPEND}"
