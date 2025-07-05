@@ -20,14 +20,11 @@ else
 		https://ffmpeg.org/releases/ffmpeg-${PV}.tar.xz
 		verify-sig? ( https://ffmpeg.org/releases/ffmpeg-${PV}.tar.xz.asc )
 		${FFMPEG_SOC_PATCH:+"
-			soc? (
-				https://dev.gentoo.org/~chewi/distfiles/${FFMPEG_SOC_PATCH}
-				verify-sig? ( https://dev.gentoo.org/~chewi/distfiles/${FFMPEG_SOC_PATCH}.asc )
-			)
+			soc? ( https://dev.gentoo.org/~chewi/distfiles/${FFMPEG_SOC_PATCH} )
 		"}
 	"
-	S=${WORKDIR}/ffmpeg-${PV} # avoid ${P}
-	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos"
+	S=${WORKDIR}/ffmpeg-${PV} # avoid ${P} for ffmpeg-compat
+	KEYWORDS="amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos"
 fi
 
 DESCRIPTION="Complete solution to record/convert/stream audio and video"
@@ -52,7 +49,7 @@ FFMPEG_IUSE_MAP=(
 	codec2:libcodec2
 	cuda:cuda-llvm
 	+dav1d:libdav1d
-	doc:^htmlpages
+	${FFMPEG_UNSLOTTED:+doc:^htmlpages}
 	+drm:libdrm
 	dvd:libdvdnav,libdvdread
 	fdk:libfdk-aac@nonfree
@@ -164,7 +161,7 @@ REQUIRED_USE="
 	cuda? ( nvenc )
 	fribidi? ( truetype )
 	gmp? ( !librtmp )
-	libplacebo? ( || ( sdl vulkan ) )
+	libplacebo? ( vulkan )
 	npp? ( nvenc )
 	shaderc? ( vulkan )
 	libaribb24? ( gpl ) cdio? ( gpl ) dvd? ( gpl ) frei0r? ( gpl )
@@ -222,10 +219,10 @@ COMMON_DEPEND="
 	)
 	jack? ( virtual/jack[${MULTILIB_USEDEP}] )
 	jpeg2k? ( media-libs/openjpeg:2=[${MULTILIB_USEDEP}] )
-	jpegxl? ( media-libs/libjxl:=[$MULTILIB_USEDEP] )
+	jpegxl? ( media-libs/libjxl:=[${MULTILIB_USEDEP}] )
 	kvazaar? ( media-libs/kvazaar:=[${MULTILIB_USEDEP}] )
 	lame? ( media-sound/lame[${MULTILIB_USEDEP}] )
-	lcms? ( media-libs/lcms:2[$MULTILIB_USEDEP] )
+	lcms? ( media-libs/lcms:2[${MULTILIB_USEDEP}] )
 	libaom? ( media-libs/libaom:=[${MULTILIB_USEDEP}] )
 	libaribb24? ( media-libs/aribb24[${MULTILIB_USEDEP}] )
 	libaribcaption? ( media-libs/libaribcaption[${MULTILIB_USEDEP}] )
@@ -233,7 +230,7 @@ COMMON_DEPEND="
 	libcaca? ( media-libs/libcaca[${MULTILIB_USEDEP}] )
 	libilbc? ( media-libs/libilbc:=[${MULTILIB_USEDEP}] )
 	liblc3? ( >=media-sound/liblc3-1.1[${MULTILIB_USEDEP}] )
-	libplacebo? ( media-libs/libplacebo:=[$MULTILIB_USEDEP] )
+	libplacebo? ( media-libs/libplacebo:=[vulkan,${MULTILIB_USEDEP}] )
 	librtmp? ( media-video/rtmpdump[${MULTILIB_USEDEP}] )
 	libsoxr? ( media-libs/soxr[${MULTILIB_USEDEP}] )
 	libtesseract? ( app-text/tesseract:=[${MULTILIB_USEDEP}] )
@@ -259,7 +256,10 @@ COMMON_DEPEND="
 	rav1e? ( >=media-video/rav1e-0.5:=[capi] )
 	rubberband? ( media-libs/rubberband:=[${MULTILIB_USEDEP}] )
 	samba? ( net-fs/samba:=[client,${MULTILIB_USEDEP}] )
-	sdl? ( media-libs/libsdl2[sound(+),video(+),${MULTILIB_USEDEP}] )
+	sdl? (
+		media-libs/libsdl2[sound(+),video(+),${MULTILIB_USEDEP}]
+		libplacebo? ( media-libs/libsdl2[vulkan] )
+	)
 	shaderc? ( media-libs/shaderc[${MULTILIB_USEDEP}] )
 	snappy? ( app-arch/snappy:=[${MULTILIB_USEDEP}] )
 	sndio? ( media-sound/sndio:=[${MULTILIB_USEDEP}] )
@@ -272,7 +272,7 @@ COMMON_DEPEND="
 		x11-libs/cairo[${MULTILIB_USEDEP}]
 	)
 	svt-av1? ( >=media-libs/svt-av1-0.9:=[${MULTILIB_USEDEP}] )
-	theora? ( media-libs/libtheora[encode,${MULTILIB_USEDEP}] )
+	theora? ( media-libs/libtheora:=[encode,${MULTILIB_USEDEP}] )
 	truetype? (
 		media-libs/freetype:2[${MULTILIB_USEDEP}]
 		media-libs/harfbuzz:=[${MULTILIB_USEDEP}]
@@ -292,7 +292,7 @@ COMMON_DEPEND="
 	webp? ( media-libs/libwebp:=[${MULTILIB_USEDEP}] )
 	x264? ( media-libs/x264:=[${MULTILIB_USEDEP}] )
 	x265? ( media-libs/x265:=[${MULTILIB_USEDEP}] )
-	xml? ( dev-libs/libxml2[${MULTILIB_USEDEP}] )
+	xml? ( dev-libs/libxml2:=[${MULTILIB_USEDEP}] )
 	xvid? ( media-libs/xvid[${MULTILIB_USEDEP}] )
 	zeromq? ( net-libs/zeromq:= )
 	zimg? ( media-libs/zimg[${MULTILIB_USEDEP}] )
@@ -318,7 +318,6 @@ DEPEND="
 "
 BDEPEND="
 	app-alternatives/awk
-	dev-lang/perl
 	virtual/pkgconfig
 	amd64? (
 		|| (
@@ -327,17 +326,13 @@ BDEPEND="
 		)
 	)
 	cuda? ( llvm-core/clang:*[llvm_targets_NVPTX] )
-	doc? ( sys-apps/texinfo )
+	${FFMPEG_UNSLOTTED:+"
+		dev-lang/perl
+		doc? ( sys-apps/texinfo )
+	"}
 "
 [[ ${PV} != 9999 ]] &&
-	BDEPEND+="
-		verify-sig? (
-			sec-keys/openpgp-keys-ffmpeg
-			${FFMPEG_SOC_PATCH:+"
-				soc? ( >=sec-keys/openpgp-keys-gentoo-developers-20240708 )
-			"}
-		)
-	"
+	BDEPEND+=" verify-sig? ( sec-keys/openpgp-keys-ffmpeg )"
 
 DOCS=( CREDITS Changelog README.md doc/APIchanges )
 [[ ${PV} != 9999 ]] && DOCS+=( RELEASE_NOTES )
@@ -350,6 +345,15 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-6.1-opencl-parallel-gmake-fix.patch
 	"${FILESDIR}"/${PN}-7.1.1-svt-av1-3.patch
 )
+
+pkg_pretend() {
+	# TODO: drop this after a few months
+	if has_version "${CATEGORY}/${PN}[mp3]" && use !lame; then #952971
+		ewarn "${PN}'s 'mp3' USE was renamed to 'lame', please enable it"
+		ewarn "if wish to keep the ability to encode using media-sound/lame."
+		ewarn "This is *not* needed if only want mp3 playback."
+	fi
+}
 
 pkg_setup() {
 	[[ ${MERGE_TYPE} != binary ]] || return
@@ -372,13 +376,9 @@ src_unpack() {
 	if [[ ${PV} == 9999 ]]; then
 		git-r3_src_unpack
 	else
-		if use verify-sig; then
+		use verify-sig &&
 			verify-sig_verify_detached "${DISTDIR}"/ffmpeg-${PV}.tar.xz{,.asc} \
 				"${BROOT}"/usr/share/openpgp-keys/ffmpeg.asc
-			in_iuse soc && use soc &&
-				verify-sig_verify_detached "${DISTDIR}"/${FFMPEG_SOC_PATCH}{,.asc} \
-					"${BROOT}"/usr/share/openpgp-keys/gentoo-developers.asc
-		fi
 		default
 	fi
 }
@@ -424,7 +424,7 @@ multilib_src_configure() {
 		--prefix="${prefix}"
 		--libdir="${prefix}"/$(get_libdir)
 		--shlibdir="${prefix}"/$(get_libdir)
-		--mandir="${prefix}"/share/man # ignoring slotted MANPATH
+		--mandir="${prefix}"/share/man
 		--docdir="${EPREFIX}"/usr/share/doc/${PF}/html
 
 		--ar="$(tc-getAR)"
@@ -454,7 +454,6 @@ multilib_src_configure() {
 
 		# disabled primarily due to being unpackaged
 		--disable-decklink
-		--disable-libaribcaption
 		--disable-libdavs2
 		--disable-libklvanc
 		--disable-liblcevc-dec
@@ -481,7 +480,7 @@ multilib_src_configure() {
 		--disable-libopencv # leaving for later due to circular opencv[ffmpeg]
 		--disable-librist # librist itself needs attention first (bug #822012)
 		--disable-libtensorflow # causes headaches, and is gone
-		--disable-libtorch # has not been looked at yet (bug #936127)
+		--disable-libtorch # support may need special attention (bug #936127)
 		--disable-mbedtls # messy with slots, tests underlinking issues
 		--disable-mmal # prefer USE=soc
 		--disable-omx # unsupported (bug #653386)
@@ -504,6 +503,12 @@ multilib_src_configure() {
 
 	# broken on x32 (bug #427004), and not PIC safe on x86 (bug #916067)
 	[[ ${ABI} == @(x32|x86) ]] && conf+=( --disable-asm )
+
+	# disable due to asm-related failures on ppc (bug #951464, ppc64be)
+	# https://trac.ffmpeg.org/ticket/9604 (ppc64el)
+	# https://trac.ffmpeg.org/ticket/10955 (ppc64el)
+	# (review re-enabling if resolved, or if debian allows it again)
+	use ppc || use ppc64 && conf+=( --disable-asm )
 
 	if tc-is-cross-compiler; then
 		conf+=(
@@ -556,7 +561,7 @@ multilib_src_configure() {
 		${EXTRA_ECONF}
 	)
 
-	einfo "${conf[*]}" # no edo.eclass due to noisy long command in errors
+	einfo "${conf[*]}"
 	"${conf[@]}" || die "configure failed, see ${BUILD_DIR}/ffbuild/config.log"
 }
 
