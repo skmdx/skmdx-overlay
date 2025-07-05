@@ -6,7 +6,7 @@ EAPI=8
 inherit font
 
 DESCRIPTION="IBM Plex Mono と IBM Plex Sans JP を合成したプログラミングフォント PlemolJP (プレモル ジェイピー)"
-HOMEPAGE="https://github.com/adobe-fonts/source-han-sans/"
+HOMEPAGE="https://github.com/yuru7/PlemolJP"
 SRC_URI="https://github.com/yuru7/PlemolJP/releases/download/v${PV}/PlemolJP_v${PV}.zip"
 
 KEYWORDS="~amd64"
