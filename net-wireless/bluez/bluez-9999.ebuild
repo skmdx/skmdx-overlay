@@ -59,6 +59,14 @@ RDEPEND="${DEPEND}
 
 RESTRICT="!test? ( test )"
 
+PATCHES=(
+	# Try both udevadm paths to cover udev/systemd vs. eudev locations (#539844)
+	# http://www.spinics.net/lists/linux-bluetooth/msg58739.html
+	# https://bugs.gentoo.org/539844
+	# https://github.com/bluez/bluez/issues/1650
+	"${FILESDIR}"/${PN}-udevadm-path-r1.patch
+)
+
 pkg_setup() {
 	# From http://www.linuxfromscratch.org/blfs/view/svn/general/bluez.html
 	# to prevent bugs like:
@@ -90,9 +98,6 @@ pkg_setup() {
 
 src_prepare() {
 	default
-
-	# https://github.com/bluez/bluez/issues/806
-	eapply "${FILESDIR}"/0001-Allow-using-obexd-without-systemd-in-the-user-session-r4.patch
 
 	eautoreconf
 

@@ -1,0 +1,20 @@
+--- bluez-5.84.ebuild	2025-10-04 21:48:10.350972546 +0900
++++ bluez-9999.ebuild	2025-10-04 21:47:17.263569226 +0900
+@@ -4,15 +4,14 @@
+ EAPI=8
+ PYTHON_COMPAT=( python3_{11..13} )
+ 
+-inherit autotools flag-o-matic linux-info optfeature python-single-r1 systemd udev multilib-minimal #readme.gentoo-r1
++inherit git-r3 autotools flag-o-matic linux-info optfeature python-single-r1 systemd udev multilib-minimal #readme.gentoo-r1
+ 
+ DESCRIPTION="Bluetooth Tools and System Daemons for Linux"
+ HOMEPAGE="https://www.bluez.org https://github.com/bluez/bluez"
+-SRC_URI="https://www.kernel.org/pub/linux/bluetooth/${P}.tar.xz"
++EGIT_REPO_URI="https://github.com/bluez/bluez.git"
+ 
+ LICENSE="GPL-2+ LGPL-2.1+"
+ SLOT="0/3"
+-KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~x86"
+ IUSE="btpclient cups doc debug deprecated extra-tools experimental man +mesh midi +obex +readline selinux systemd test test-programs +udev"
+ 
+ # Since this release all remaining extra-tools need readline support, but this could
