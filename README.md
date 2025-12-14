@@ -9,7 +9,9 @@
 - media-fonts/plemoljp
 - media-libs/glfw-9999
 - media-libs/libaribcaption
+- media-libs/libaribb25
 - media-video/ffmpeg (with libaribcation support)
+- media-tv/recisdb
 - net-wireless/bluez-9999
 - x11-themes/QAdwaitaDecorations
 
