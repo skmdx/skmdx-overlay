@@ -1,0 +1,26 @@
+--- /var/db/repos/gentoo/media-video/ffmpeg/ffmpeg-8.0.1.ebuild	2025-12-13 22:11:47.245771857 +0900
++++ ffmpeg-8.0.1.ebuild	2025-12-14 13:53:45.285260854 +0900
+@@ -77,6 +77,7 @@
+ 	lcms:lcms2
+ 	libaom
+ 	libaribb24:@v3 # reminder: req use on gpl unneeded if >=1.0.4 (not in tree)
++	libaribcaption
+ 	+libass
+ 	libcaca
+ 	libilbc
+@@ -224,6 +225,7 @@
+ 	lcms? ( media-libs/lcms:2[${MULTILIB_USEDEP}] )
+ 	libaom? ( media-libs/libaom:=[${MULTILIB_USEDEP}] )
+ 	libaribb24? ( media-libs/aribb24[${MULTILIB_USEDEP}] )
++	libaribcaption? ( media-libs/libaribcaption[${MULTILIB_USEDEP}] )
+ 	libass? ( media-libs/libass:=[${MULTILIB_USEDEP}] )
+ 	libcaca? ( media-libs/libcaca[${MULTILIB_USEDEP}] )
+ 	libilbc? ( media-libs/libilbc:=[${MULTILIB_USEDEP}] )
+@@ -441,7 +443,6 @@
+ 
+ 		# disabled primarily due to being unpackaged
+ 		--disable-decklink
+-		--disable-libaribcaption
+ 		--disable-libdavs2
+ 		--disable-libklvanc
+ 		--disable-liblcevc-dec
