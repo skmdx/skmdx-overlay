@@ -39,7 +39,7 @@ S="${WORKDIR}/${MY_P}"
 src_prepare() {
 	default
 	# Ensure we use the correct compiler
-	tc-export CXX CC AR
+	tc-export CXX CC AR LD
 
 	# Remove -Werror to avoid build failures due to warnings
 	sed -i 's/-Werror//' Makefile.inc || die
