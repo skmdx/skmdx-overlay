@@ -70,6 +70,8 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
+IUSE="system-libs"
+
 BDEPEND="
 	$(llvm_gen_dep '
 		llvm-core/llvm:${LLVM_SLOT}
@@ -82,9 +84,23 @@ BDEPEND="
 	app-arch/unzip
 	dev-build/cmake
 	dev-build/ninja
+	virtual/pkgconfig
 "
-DEPEND=""
-RDEPEND="!dev-lang/bun-bin"
+DEPEND="
+	system-libs? (
+		net-dns/c-ares
+		dev-cpp/highway
+		app-arch/brotli
+		app-arch/libarchive
+		app-arch/libdeflate
+		dev-libs/libuv
+		app-arch/zstd
+	)
+"
+RDEPEND="!dev-lang/bun-bin
+	${DEPEND}"
+
+RESTRICT="network-sandbox"
 
 S="${WORKDIR}/bun-bun-v${PV}"
 
@@ -148,7 +164,6 @@ src_unpack() {
 			esac
 
 		fi
-		
 		einfo "Setting up vendor/${name} from ${dir_in_work}..."
 		mv "${WORKDIR}/${dir_in_work}" "${S}/vendor/${name}" || die
 		
@@ -188,11 +203,6 @@ src_unpack() {
 }
 
 src_prepare() {
-	# Patch Globals.cmake to skip register_repository and register_bun_install if outputs exist
-	sed -i '/cmake_parse_arguments(GIT/a \ 	  if(NOT GIT_PATH)\n	    set(GIT_PATH ${VENDOR_PATH}/${GIT_NAME})\n	  endif()\n	  if(EXISTS "${GIT_PATH}/.ref")\n	    message(STATUS "Skipping repository ${GIT_NAME} (already exists)")\n	    if(NOT TARGET clone-${GIT_NAME})\n	      add_custom_target(clone-${GIT_NAME})\n	    endif()\n	    return()\n	  endif()' "${S}/cmake/Globals.cmake" || die
-	
-	sed -i '/cmake_parse_arguments(NPM/a \ 	  if(EXISTS "${NPM_CWD}/node_modules")\n	    message(STATUS "Skipping bun install in ${NPM_CWD} (already exists)")\n	    if(NOT TARGET install-${NPM_TARGET})\n	      add_custom_target(install-${NPM_TARGET})\n	    endif()\n	    return()\n	  endif()' "${S}/cmake/Globals.cmake" || die
-
 	# Patch SetupZig.cmake to skip if ZIG_EXECUTABLE exists
 	sed -i '/register_command(/i if(EXISTS "${ZIG_EXECUTABLE}")\n  if(NOT TARGET clone-zig)\n    add_custom_target(clone-zig)\n  endif()\n  return()\nendif()' "${S}/cmake/tools/SetupZig.cmake" || die
 
@@ -200,10 +210,6 @@ src_prepare() {
 	# We replace instead of removing to avoid empty arguments in CMake functions
 	find . -type f -name "*.cmake" -exec sed -i -E 's/-Werror(=[^ ]*)?/-Wno-error/g' {} + || die
 	find . -type f -name "CMakeLists.txt" -exec sed -i -E 's/-Werror(=[^ ]*)?/-Wno-error/g' {} + || die
-
-	# Forbid network access in CMake scripts
-	sed -i '1i message(FATAL_ERROR "Network access is forbidden in this environment")' "${S}/cmake/scripts/DownloadUrl.cmake" || die
-	sed -i '1i message(FATAL_ERROR "Network access is forbidden in this environment")' "${S}/cmake/scripts/DownloadZig.cmake" || die
 
 	# The node-headers command in BuildBun.cmake is buggy (uses multiple COMMAND keywords
 	# which register_command flattens incorrectly) and unnecessary since we provide 
@@ -218,6 +224,66 @@ src_prepare() {
 	# Patch GenerateDependencyVersions.cmake to provide a fallback for BUN_GIT_SHA
 	# when building outside of a git repository.
 	sed -i 's/set(BUN_GIT_SHA "unknown")/set(BUN_GIT_SHA "'${PV}'")/' "${S}/cmake/tools/GenerateDependencyVersions.cmake" || die
+
+	if use system-libs; then
+		einfo "Patching for system libraries..."
+		
+		# Create FindSystemLibraries.cmake
+		cat <<'EOF' > "${S}/cmake/FindSystemLibraries.cmake" || die
+include(FindPkgConfig)
+
+macro(bun_use_system_lib_pkg NAME PKG)
+  if(BUN_USE_SYSTEM_${NAME})
+    pkg_check_modules(${NAME} REQUIRED ${PKG})
+    list(APPEND BUN_SYSTEM_LIBRARIES ${${NAME}_LIBRARIES})
+    list(APPEND BUN_SYSTEM_INCLUDE_DIRS ${${NAME}_INCLUDE_DIRS})
+    list(APPEND BUN_SYSTEM_LIBRARY_DIRS ${${NAME}_LIBRARY_DIRS})
+    list(REMOVE_ITEM BUN_DEPENDENCIES ${NAME})
+    message(STATUS "Found system ${NAME} (${PKG})")
+  endif()
+endmacro()
+
+if(BUN_USE_SYSTEM_Cares)
+  bun_use_system_lib_pkg(Cares libcares)
+endif()
+if(BUN_USE_SYSTEM_Highway)
+  bun_use_system_lib_pkg(Highway libhwy)
+endif()
+if(BUN_USE_SYSTEM_Brotli)
+  bun_use_system_lib_pkg(Brotli "libbrotlicommon libbrotlidec libbrotlienc")
+endif()
+if(BUN_USE_SYSTEM_LibArchive)
+  bun_use_system_lib_pkg(LibArchive libarchive)
+endif()
+if(BUN_USE_SYSTEM_LibDeflate)
+  bun_use_system_lib_pkg(LibDeflate libdeflate)
+endif()
+if(BUN_USE_SYSTEM_Zstd)
+  bun_use_system_lib_pkg(Zstd libzstd)
+endif()
+if(BUN_USE_SYSTEM_Libuv)
+  pkg_check_modules(Libuv REQUIRED libuv)
+  list(APPEND BUN_SYSTEM_LIBRARIES ${Libuv_LIBRARIES})
+  list(APPEND BUN_SYSTEM_INCLUDE_DIRS ${Libuv_INCLUDE_DIRS})
+  list(APPEND BUN_SYSTEM_LIBRARY_DIRS ${Libuv_LIBRARY_DIRS})
+  list(REMOVE_ITEM BUN_DEPENDENCIES Libuv)
+  # Add definition for C code
+  add_definitions(-DBUN_USE_SYSTEM_Libuv)
+  # Wrap the stubs to avoid conflicts
+  if(EXISTS "${CWD}/src/bun.js/bindings/uv-posix-stubs.c")
+    file(READ "${CWD}/src/bun.js/bindings/uv-posix-stubs.c" STUB_CONTENT)
+    file(WRITE "${CWD}/src/bun.js/bindings/uv-posix-stubs.c" "#ifndef BUN_USE_SYSTEM_Libuv\n${STUB_CONTENT}\n#endif\n")
+  endif()
+endif()
+# Lshpack is skipped for now because dev-libs/ls-hpack in guru is broken (missing lsxpack_header.h)
+EOF
+
+		# Include it after BUN_DEPENDENCIES initial setup
+		sed -i '/^[[:space:]]*Zstd[[:space:]]*$/!b;n;a include(FindSystemLibraries)' "${S}/cmake/targets/BuildBun.cmake" || die
+		
+		# Add linking after bun target is created
+		sed -i '/target_link_libraries(${bun} PRIVATE ${BUN_ZIG_OUTPUT})/a \ 	target_link_libraries(${bun} PRIVATE ${BUN_SYSTEM_LIBRARIES})\n\ 	target_include_directories(${bun} PRIVATE ${BUN_SYSTEM_INCLUDE_DIRS})\n\ 	target_link_directories(${bun} PRIVATE ${BUN_SYSTEM_LIBRARY_DIRS})' "${S}/cmake/targets/BuildBun.cmake" || die
+	fi
 
 	cmake_src_prepare
 }
@@ -259,6 +325,19 @@ src_configure() {
 		-DVENDOR_PATH="${S}/vendor"
 		-DCACHE_PATH="${S}/build/cache"
 	)
+
+	if use system-libs; then
+		mycmakeargs+=(
+			-DBUN_USE_SYSTEM_Cares=ON
+			-DBUN_USE_SYSTEM_Highway=ON
+			-DBUN_USE_SYSTEM_Brotli=ON
+			-DBUN_USE_SYSTEM_LibArchive=ON
+			-DBUN_USE_SYSTEM_LibDeflate=ON
+			-DBUN_USE_SYSTEM_Libuv=ON
+			-DBUN_USE_SYSTEM_Zstd=ON
+		)
+	fi
+
 	cmake_src_configure
 }
 
