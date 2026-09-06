@@ -1,0 +1,34 @@
+From: skmdx <7088737+skmdx@users.noreply.github.com>
+Subject: [PATCH] tests: distinguish HOME from the account home directory
+
+Portage sets HOME to a temporary build directory. ExpandPath resolves a tilde
+using os/user, but expands environment variables using os.ExpandEnv. Test the
+two sources independently instead of assuming they contain the same path.
+
+--- a/internal/util/paths/paths_test.go
++++ b/internal/util/paths/paths_test.go
+@@ -1,6 +1,7 @@
+ package paths
+ 
+ import (
++	"os"
+ 	"os/user"
+ 	"strings"
+ 	"testing"
+@@ -27,14 +28,14 @@ func TestExpandPath(t *testing.T) {
+ 
+ 	s1 := []string{home, "foo"}
+ 	homefoo := strings.Join(s1, "/")
+-	s2 := []string{"E.T phone", home}
++	s2 := []string{"E.T phone", os.Getenv("HOME")}
+ 	etph := strings.Join(s2, " ")
+ 
+ 	// base cases
+ 	test("~", home)
+ 	test("~/", home)
+ 	test("~/foo", homefoo)
+-	test("${HOME}/foo", homefoo)
++	test("${HOME}/foo", os.Getenv("HOME")+"/foo")
+ 	test("/usr/opt", "/usr/opt")
+ 
+ 	// edge cases

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+		<email>7088737+skmdx@users.noreply.github.com</email>
+	</maintainer>
+	<use>
+		<flag name="fzf">Install fzf for interactive note selection</flag>
+	</use>
+	<upstream>
+		<remote-id type="github">zk-org/zk</remote-id>
+	</upstream>
+</pkgmetadata>
