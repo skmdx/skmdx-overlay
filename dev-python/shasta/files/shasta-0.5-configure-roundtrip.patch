@@ -1,0 +1,134 @@
+--- a/shasta/ast_node.py
++++ b/shasta/ast_node.py
+@@ -346,7 +346,11 @@
+         return json_output
+     
+     def pretty(self):
+-        return self.node.pretty() + string_of_redirs(self.redir_list)
++        # Lists need an enclosing group so redirections cover every command.
++        command = self.node.pretty()
++        if self.node.NodeName in ("And", "Or", "Semi", "Pipe"):
++            command = braces(command)
++        return command + string_of_redirs(self.redir_list)
+ 
+ class BackgroundNode(Command):
+     NodeName = 'Background'
+@@ -639,6 +643,15 @@
+     def pretty(self, quote_mode=UNQUOTED):
+         param = self.char
+         char = chr(param)
++
++        # Quoted heredoc bodies are literal, including shell metacharacters.
++        if quote_mode == LITERAL_HEREDOC:
++            return char
++        # Double quotes and expanding heredocs only consume a backslash
++        # before their own expansion/quoting characters.
++        if quote_mode in (QUOTED, HEREDOC):
++            special = '\\$`"' if quote_mode == QUOTED else '\\$`'
++            return '\\' + char if char in special else char
+ 
+         ## MMG 2021-09-20 It might be safe to move everything except for " in the second list, but no need to do it if the tests pass
+         ## '!' dropped for bash non-interactive bash compatibility
+@@ -988,7 +1001,7 @@
+         t = self.heredoc_type
+         fd = self.fd
+         a = self.arg
+-        heredoc = string_of_arg(a, quote_mode=HEREDOC)
++        heredoc = string_of_arg(a, quote_mode=HEREDOC if self.heredoc_type == "XHere" else LITERAL_HEREDOC)
+         marker = fresh_marker0(heredoc) if not self.eof else self.eof
+ 
+         stri = handle_redirvarassign(fd, 0) + "<<" + ("-" if self.kill_leading else "")
+@@ -1001,7 +1014,7 @@
+ 
+     def body_pretty(self):
+         a = self.arg
+-        heredoc = string_of_arg(a, quote_mode=HEREDOC)
++        heredoc = string_of_arg(a, quote_mode=HEREDOC if self.heredoc_type == "XHere" else LITERAL_HEREDOC)
+         marker = fresh_marker0(heredoc) if not self.eof else self.eof
+ 
+         return heredoc + marker + "\n"
+@@ -1010,7 +1023,7 @@
+         t = self.heredoc_type
+         fd = self.fd
+         a = self.arg
+-        heredoc = string_of_arg(a, quote_mode=HEREDOC)
++        heredoc = string_of_arg(a, quote_mode=HEREDOC if self.heredoc_type == "XHere" else LITERAL_HEREDOC)
+         marker = fresh_marker0(heredoc)
+ 
+         stri = handle_redirvarassign(fd, 0) + "<<" + ("-" if self.kill_leading else "")
+@@ -1067,9 +1080,9 @@
+     while i < len(args):
+         c = args[i].pretty(quote_mode=quote_mode)
+         # escape dollar signs to avoid variable interpolation
+-        if isinstance(args[i], CArgChar) and not args[i].bash_mode and c == "$" and i + 1 < len(args):
++        if quote_mode != LITERAL_HEREDOC and isinstance(args[i], CArgChar) and not args[i].bash_mode and c == "$" and i + 1 < len(args):
+             c = "\\$"
+-        if c == "$" and not isinstance(args[i], CArgChar):
++        if quote_mode != LITERAL_HEREDOC and c == "$" and not isinstance(args[i], CArgChar):
+             raise RuntimeError(f"{c}, {type(c)}")
+         text.append(c)
+ 
+--- a/shasta/print_lib.py
++++ b/shasta/print_lib.py
+@@ -16,7 +16,8 @@
+ UNQUOTED = 0 # everything escaped
+ QUOTED = 1   # only escape special characters
+ HEREDOC = 2  # like QUOTED, but _don't_ escape double quotes
+-QUOTE_MODES = [UNQUOTED, QUOTED, HEREDOC]
++LITERAL_HEREDOC = 3  # quoted delimiter: the body is not expanded
++QUOTE_MODES = [UNQUOTED, QUOTED, HEREDOC, LITERAL_HEREDOC]
+ 
+ def intercalate(p, ss):
+     str = p.join(ss)
+--- /dev/null
++++ b/tests/test_posix_quoting.py
+@@ -0,0 +1,49 @@
++"""Execute real libdash parse/Shasta print round trips for configure quoting."""
++import subprocess
++import sys
++
++import pytest
++
++
++@pytest.mark.parametrize("source", [
++    # Redirection applies to the entire command list, including the first arm.
++    "{ printf first && printf second; } > result; printf marker; cat result; rm result\n",
++    "{ printf first; printf second; } > result; printf marker; cat result; rm result\n",
++    "{ printf first || printf second; } > result; printf marker; cat result; rm result\n",
++    # Autoconf config.status sed grouping inside a double-quoted assignment.
++    r'''expr="s/\(=[ ]*\).*/\1/"
++printf '%s\n' 'key= value' | sed "$expr"
++''',
++    # Autoconf defines.awk uses a quoted heredoc and an AWK dollar expression.
++    '''cat <<'EOF'
++line = $ 0
++"quotes" 'apostrophe' `backticks` \\ $VAR ${VAR} $(false)
++EOF
++''',
++    # Expanding heredocs still expand variables and preserve literal escapes.
++    r'''VAR=expanded
++cat <<EOF
++"quotes" 'apostrophe' (paren) {brace} & | ; $VAR \$VAR \\ \\(
++EOF
++''',
++    r'''printf '%s\n' "' ( ) { } & | ;" "\$" "\`" "\\" "\""
++''',
++])
++def test_posix_quoting_roundtrip(tmp_path, source):
++    script = tmp_path / "original.sh"
++    script.write_text(source)
++    # libdash has process-global state, so isolate it from other parser tests.
++    parser = """
++import sys
++import libdash.parser
++from shasta.json_to_ast import to_ast_node
++for ast, _, _, _ in libdash.parser.parse(sys.argv[1]):
++    print(to_ast_node(ast).pretty())
++"""
++    regenerated = subprocess.run([sys.executable, "-c", parser, str(script)],
++        capture_output=True, check=True, timeout=10).stdout
++    expected = subprocess.run(["bash", str(script)], capture_output=True, cwd=tmp_path, timeout=10)
++    actual = subprocess.run(["bash"], input=regenerated, capture_output=True, cwd=tmp_path, timeout=10)
++    assert expected.returncode == 0
++    assert (actual.returncode, actual.stdout, actual.stderr) == (
++        expected.returncode, expected.stdout, expected.stderr)
