@@ -32,7 +32,7 @@ RDEPEND="
 		<dev-python/libbash-0.2[${PYTHON_USEDEP}]
 		>=dev-python/pash-annotations-0.2.4[${PYTHON_USEDEP}]
 		<dev-python/pash-annotations-0.3[${PYTHON_USEDEP}]
-		>=dev-python/shasta-0.4[${PYTHON_USEDEP}]
+		>=dev-python/shasta-0.5-r1[${PYTHON_USEDEP}]
 		<dev-python/shasta-1[${PYTHON_USEDEP}]
 		>=dev-python/sh-expand-0.2.0[${PYTHON_USEDEP}]
 		<dev-python/sh-expand-0.3[${PYTHON_USEDEP}]
@@ -50,6 +50,7 @@ BDEPEND="test? ( ${RDEPEND} )"
 PATCHES=(
 	"${FILESDIR}/${P}-build.patch"
 	"${FILESDIR}/${P}-interpreter.patch"
+	"${FILESDIR}/${P}-runtime-variable.patch"
 )
 
 src_prepare() {
@@ -71,6 +72,11 @@ src_compile() {
 
 python_test() {
 	local output
+	output=$(LD_LIBRARY_PATH="${T}/pash-library-path" "${EPYTHON}" -m pash.cli \
+		-c 'printf "%s\n" "$LD_LIBRARY_PATH"') || die "Environment preservation failed"
+	[[ ${output} == "${T}/pash-library-path" ]] || die "Runtime changed LD_LIBRARY_PATH: ${output}"
+	output=$("${EPYTHON}" -m pash.cli -c 'tmp=preserved; printf "%s\n" "$tmp" | cat') || die "Variable preservation failed"
+	[[ ${output} == preserved ]] || die "Runtime clobbered tmp: ${output}"
 	output=$("${EPYTHON}" -m pash.cli --version) || die "Version command failed"
 	[[ ${output} == "pash ${PV}" ]] || die "Incorrect version: ${output}"
 	output=$("${EPYTHON}" -m pash.cli -w 2 --assert_all_regions_parallelizable \

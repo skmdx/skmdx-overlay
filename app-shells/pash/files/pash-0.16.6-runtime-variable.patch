@@ -1,0 +1,36 @@
+--- a/src/pash/jit_runtime/pash_prepare_call_compiler.sh
++++ b/src/pash/jit_runtime/pash_prepare_call_compiler.sh
+@@ -13,17 +13,17 @@
+ export pash_input_args=( "$@" )
+ 
+ ## Move some pash env variables to local so that tests pass
+-tmp="$pash_disable_parallel_pipelines"
++pash_runtime_saved_value="$pash_disable_parallel_pipelines"
+ unset pash_disable_parallel_pipelines
+-pash_disable_parallel_pipelines="$tmp"
++pash_disable_parallel_pipelines="$pash_runtime_saved_value"
+ 
+-tmp="$pash_input_ir_file"
++pash_runtime_saved_value="$pash_input_ir_file"
+ unset pash_input_ir_file
+-pash_input_ir_file="$tmp"
++pash_input_ir_file="$pash_runtime_saved_value"
+ 
+-tmp="$pash_sequential_script_file"
++pash_runtime_saved_value="$pash_sequential_script_file"
+ unset pash_sequential_script_file
+-pash_sequential_script_file="$tmp"
++pash_sequential_script_file="$pash_runtime_saved_value"
+ 
+ ## Save the shell variables to a file (necessary for expansion)
+ export pash_runtime_shell_variables_file="${PASH_TMP_PREFIX}/variables_$RANDOM$RANDOM$RANDOM"
+--- a/src/pash/pa.sh
++++ b/src/pash/pa.sh
+@@ -12,7 +12,6 @@
+     # Use script location as PASH_TOP
+     export PASH_TOP="$SCRIPT_DIR"
+ fi
+-export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib/"
+ export RUNTIME_DIR="$PASH_TOP/jit_runtime"
+ export WRAPPER_LIB_DIR="$RUNTIME_DIR/../wrapper_library/"
+ export RUNTIME_LIBRARY_DIR="$PASH_TOP/runtime"
