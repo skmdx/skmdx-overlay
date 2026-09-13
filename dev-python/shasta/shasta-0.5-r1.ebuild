@@ -16,6 +16,8 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64"
 
+PATCHES=( "${FILESDIR}/${PN}-${PV}-configure-roundtrip.patch" )
+
 BDEPEND="test? ( dev-python/libdash[${PYTHON_USEDEP}] )"
 
 EPYTEST_PLUGINS=()
