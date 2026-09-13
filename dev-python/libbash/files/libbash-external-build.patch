@@ -1,0 +1,77 @@
+--- a/setup.py
++++ b/setup.py
+@@ -9,41 +9,10 @@
+
+
+
+-def try_exec(*cmds):
+-    proc = subprocess.run(cmds)
+-
+-    if proc.returncode != 0:
+-        print('`{}` failed'.format(' '.join(cmds)), file=sys.stderr)
+-        proc.check_returncode()
+-
+-class enter_dir(ContextDecorator):
+-    def __init__(self, path):
+-        self.path = path
+-        self.old_path = os.getcwd()
+-    def __enter__(self):
+-        os.chdir(self.path)
+-        return self
+-
+-    def __exit__(self, *exc):
+-        os.chdir(self.old_path)
+-        return False
+-
+-class build_libbash(build_py):
+-    def run(self):
+-        build_py.run(self)
+-
+-        with enter_dir('libbash/bash-5.2'):
+-            try_exec('./configure')
+-            try_exec('make', 'clean', 'all')
+-
+-        shutil.copy2('libbash/bash-5.2/bash.so', os.path.join(self.build_lib, 'libbash/bash-5.2/bash.so'))
+-
+-
+ setup(name='libbash',
+       packages=['libbash', 'libbash.bash_command'],
+-      cmdclass={'build_py': build_libbash},
+-      package_data={'': ['libbash/bash-5.2']},
+-      include_package_data=True,
++      package_data={'libbash': ['bash-5.2/bash.so']},
++      include_package_data=False,
+       version='0.1.14',
+       description="A Python library for parsing Bash scripts into an AST",
+       long_description=open('README.md').read(),
+--- a/libbash/api.py
++++ b/libbash/api.py
+@@ -11,18 +11,6 @@
+
+
+ def _setup_bash() -> ctypes.CDLL:
+-    if not os.path.isfile(BASH_FILE_PATH):
+-        # run configure and make clean all
+-        # this will compile the bash source code into a shared object file
+-        # that can be called from python using ctypes
+-        result = os.system(
+-            "cd "
+-            + os.path.dirname(BASH_FILE_PATH)
+-            + " && ./configure && make clean all"
+-        )
+-        if result != 0:
+-            raise Exception("Bash compilation failed")
+-
+     if not os.path.isfile(BASH_FILE_PATH):
+         raise Exception("Bash file not found at path: " + BASH_FILE_PATH)
+
+--- a/libbash/bash-5.2/configure
++++ b/libbash/bash-5.2/configure
+@@ -18121,6 +18121,7 @@
+ #include <sys/types.h>
+ #include <fcntl.h>
+ #include <stdlib.h>
++#include <unistd.h>
+ int
+ main()
+ {
