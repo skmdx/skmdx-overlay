@@ -15,7 +15,7 @@ S="${WORKDIR}/${PN}-${DISTCC_COMMIT}"
 
 LICENSE="GPL-2+"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 IUSE="gssapi gui hardened ipv6 selinux test xinetd zeroconf"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 RESTRICT="!test? ( test )"
