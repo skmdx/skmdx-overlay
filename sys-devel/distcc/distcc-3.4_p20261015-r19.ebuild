@@ -10,7 +10,7 @@ inherit autotools flag-o-matic llvm-r2 prefix python-single-r1 systemd xdg
 
 DESCRIPTION="Distributed C/C++ compilation with CPU, load and speed aware scheduling"
 HOMEPAGE="https://github.com/skmdx/distcc"
-DISTCC_COMMIT="100810b15232d90e420659f01fd0c156608eea28"
+DISTCC_COMMIT="0e06e78603d4926143f2ef73207832c757b57c9b"
 SRC_URI="https://github.com/skmdx/distcc/archive/${DISTCC_COMMIT}.tar.gz -> ${PF}.tar.gz"
 S="${WORKDIR}/${PN}-${DISTCC_COMMIT}"
 
