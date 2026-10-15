@@ -1,8 +1,13 @@
 [Unit]
 Description=Distccd: A Distributed Compilation Server
 After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
+Restart=on-failure
+RestartSec=2
+OOMPolicy=stop
 User=distcc
 ExecStart=/usr/bin/distccd --no-detach --daemon --port 3632 -N 15 --allow $ALLOWED_SERVERS
 
