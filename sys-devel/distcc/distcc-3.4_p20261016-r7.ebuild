@@ -194,7 +194,7 @@ pkg_postinst() {
 	elog "Pump reuses DISTCC_BROKER; without a broker use ,cpp,lzo host options."
 	elog "Use ,tcp on broker hosts for prepared jobs and shared input caching."
 	elog "Update all clients and workers together before enabling ,tcp."
-	elog "Compiler versions and default system headers must match on clients and workers."
+	elog "Compiler versions and target ABI must match; pump transfers client system headers."
 	elog
 	elog "Adaptive scheduling: enable --stats on each distccd, then add"
 	elog "stats=3633,speed=FACTOR to each TCP host in /etc/distcc/hosts."
