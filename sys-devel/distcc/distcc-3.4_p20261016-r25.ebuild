@@ -141,7 +141,8 @@ distcc_emake() {
 
 src_compile() {
 	distcc_emake
-	local headers target slot compiler version source count=0
+	local headers target slot compiler version source count=0 module_cxx=${CXX}
+	tc-is-cross-compiler && module_cxx+=" --sysroot=${ESYSROOT}"
 	for headers in "${ESYSROOT}"/usr/lib/gcc/*/*/plugin/include; do
 		[[ -f ${headers}/gcc-plugin.h ]] || continue
 		target=${headers#"${ESYSROOT}"/usr/lib/gcc/}
@@ -157,7 +158,7 @@ src_compile() {
 		esac
 		"${PYTHON}" include_server/build_gcc_scan.py --gcc "${compiler}" \
 			--source "${WORKDIR}/${source}" --plugin-headers "${headers}" \
-			--cxx "${CXX}" --output "${T}/gcc-modules" || die
+			--cxx "${module_cxx}" --output "${T}/gcc-modules" || die
 		(( count += 1 ))
 	done
 	[[ ${count} -gt 0 ]] || die "No supported GCC plugin headers in the target sysroot"
