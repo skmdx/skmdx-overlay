@@ -250,7 +250,7 @@ pkg_postinst() {
 		rm -r -f "${EROOT}/usr/$(get_libdir)/distcc" || die
 	fi
 
-	if [[ ${ROOT} == / ]]; then
+	if [[ -z ${ROOT} ]]; then
 		eselect compiler-shadow update distcc
 	fi
 
@@ -284,7 +284,7 @@ pkg_postinst() {
 }
 
 pkg_prerm() {
-	if [[ -z ${REPLACED_BY_VERSION} && ${ROOT} == / ]]; then
+	if [[ -z ${REPLACED_BY_VERSION} && -z ${ROOT} ]]; then
 		eselect compiler-shadow remove distcc
 	fi
 }
