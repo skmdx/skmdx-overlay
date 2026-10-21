@@ -1,0 +1,40 @@
+Respect parallel build settings, propagate solver build failures, and keep example CLIs out of PATH.
+
+--- a/solvers/prepare.py
++++ b/solvers/prepare.py
+@@ -14,6 +14,8 @@
+ import datetime
+ import os
+ import shutil
++import shlex
++import subprocess
+ import sys
+ import tarfile
+ import zipfile
+@@ -1227,7 +1229,7 @@
+     else:
+         cmd = 'wsl patch -p0 < solvers/patches/{0}.patch'.format(solver)
+ 
+-    os.system(cmd)
++    subprocess.check_call(cmd, shell=True)
+ 
+ 
+ #
+@@ -1238,4 +1240,5 @@
+     """
+ 
+     print('compiling {0}'.format(solver))
+-    os.system('cd solvers/{0} && make && cd ../..'.format(solver))
++    subprocess.check_call(['make'] + shlex.split(os.environ.get('MAKEOPTS', '')),
++                          cwd=os.path.join('solvers', solver))
+--- a/setup.py
++++ b/setup.py
+@@ -200,8 +200,6 @@
+     author_email='alexey.ignatiev@monash.edu, joao.marques-silva@univ-toulouse.fr, ajrmorgado@gmail.com',
+     url='https://github.com/pysathq/pysat',
+     ext_modules=[pycard_ext, pyformula_ext, pysolvers_ext],
+-    scripts=['examples/{0}.py'.format(s) for s in example_scripts] + \
+-            ['allies/{0}.py'.format(s) for s in allies_scripts],
+     cmdclass={'build': build},
+     install_requires=['six'],
+     extras_require = {

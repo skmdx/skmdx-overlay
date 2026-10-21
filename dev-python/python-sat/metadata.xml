@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+  <maintainer type="person">
+    <email>7088737+skmdx@users.noreply.github.com</email>
+    <name>skmdx</name>
+  </maintainer>
+  <use>
+    <flag name="glucose41">Build Glucose 4.1 and Gluecard 4.1, which restrict use in competitions</flag>
+  </use>
+  <upstream>
+    <remote-id type="github">pysathq/pysat</remote-id>
+    <remote-id type="pypi">python-sat</remote-id>
+  </upstream>
+</pkgmetadata>
