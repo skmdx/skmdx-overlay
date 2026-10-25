@@ -1,0 +1,14 @@
+Rebuild vendored libraries after their CMake configuration changes.
+Target ordering alone does not invalidate the library outputs when configure
+reruns, including when a compiler change clears the subproject cache.
+
+--- a/cmake/Globals.cmake
++++ b/cmake/Globals.cmake
+@@ -898,6 +898,6 @@
+     TARGETS configure-${MAKE_TARGET}
+     COMMAND ${CMAKE_COMMAND} ${MAKE_BUILD_ARGS}
+     CWD ${MAKE_CWD}
+-    SOURCES ${MAKE_SOURCES}
++    SOURCES ${MAKE_SOURCES} ${MAKE_BUILD_PATH}/CMakeCache.txt
+     ARTIFACTS ${MAKE_ARTIFACTS}
+   )

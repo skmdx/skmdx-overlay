@@ -3,7 +3,7 @@ EAPI=8
 # Bun requires LLVM 21 specifically.
 LLVM_COMPAT=( 21 )
 
-inherit cmake llvm-r1 go-module flag-o-matic
+inherit cmake llvm-r1 go-module flag-o-matic toolchain-funcs
 
 DESCRIPTION="Incredibly fast JavaScript runtime, bundler, transpiler and package manager"
 HOMEPAGE="https://bun.sh https://github.com/oven-sh/bun"
@@ -103,6 +103,11 @@ RDEPEND="!dev-lang/bun-bin
 RESTRICT="network-sandbox"
 
 S="${WORKDIR}/bun-bun-v${PV}"
+
+PATCHES=(
+	"${FILESDIR}/${P}-void-lambda-returns.patch"
+	"${FILESDIR}/${P}-cmake-dependencies.patch"
+)
 
 src_unpack() {
 	default
@@ -313,6 +318,9 @@ src_configure() {
 	unset ABI
 
 	local mycmakeargs=(
+		# SetupLLVM runs before project() loads Gentoo's toolchain file.
+		-DCMAKE_C_COMPILER="$(type -P "$(tc-getCC)")"
+		-DCMAKE_CXX_COMPILER="$(type -P "$(tc-getCXX)")"
 		-DCMAKE_BUILD_TYPE=Release
 		-DENABLE_ASSERTIONS=OFF
 		-DDEBUG=OFF

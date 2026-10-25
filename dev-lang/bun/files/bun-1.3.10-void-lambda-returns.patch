@@ -1,0 +1,64 @@
+Return without a value from void lambdas on exception paths.
+RETURN_IF_EXCEPTION(scope, {}) expands to `return {};`, which is invalid
+for a void return type and is rejected by newer Clang versions.
+
+--- a/src/bun.js/bindings/JSCommonJSModule.cpp
++++ b/src/bun.js/bindings/JSCommonJSModule.cpp
+@@ -1493,7 +1493,7 @@
+ 
+                 JSValue keyValue = identifierToJSValue(vm, moduleKey);
+                 JSValue entry = globalObject->requireMap()->get(globalObject, keyValue);
+-                RETURN_IF_EXCEPTION(scope, {});
++                RETURN_IF_EXCEPTION(scope, );
+ 
+                 if (entry) {
+                     if (auto* moduleObject = jsDynamicCast<JSCommonJSModule*>(entry)) {
+@@ -1510,7 +1510,7 @@
+                                 // On error, remove the module from the require map
+                                 // so that it can be re-evaluated on the next require.
+                                 globalObject->requireMap()->remove(globalObject, moduleObject->filename());
+-                                RETURN_IF_EXCEPTION(scope, {});
++                                RETURN_IF_EXCEPTION(scope, );
+ 
+                                 scope.throwException(globalObject, exception);
+                                 return;
+@@ -1518,7 +1518,7 @@
+                         }
+ 
+                         moduleObject->toSyntheticSource(globalObject, moduleKey, exportNames, exportValues);
+-                        RETURN_IF_EXCEPTION(scope, {});
++                        RETURN_IF_EXCEPTION(scope, );
+                     }
+                 } else {
+                     // require map was cleared of the entry
+--- a/src/bun.js/bindings/JSMockFunction.cpp
++++ b/src/bun.js/bindings/JSMockFunction.cpp
+@@ -898,7 +898,7 @@
+     auto setReturnValue = [&](JSC::JSValue value) -> void {
+         if (auto* returnValuesArray = fn->returnValues.get()) {
+             returnValuesArray->push(globalObject, value);
+-            RETURN_IF_EXCEPTION(scope, {});
++            RETURN_IF_EXCEPTION(scope, );
+             returnValueIndex = returnValuesArray->length() - 1;
+         } else {
+             JSC::ObjectInitializationScope object(vm);
+--- a/src/bun.js/modules/ObjectModule.cpp
++++ b/src/bun.js/modules/ObjectModule.cpp
+@@ -52,7 +52,7 @@
+         PropertyNameArrayBuilder properties(vm, PropertyNameMode::Strings,
+             PrivateSymbolMode::Exclude);
+         object->getPropertyNames(globalObject, properties, DontEnumPropertiesMode::Exclude);
+-        RETURN_IF_EXCEPTION(scope, {});
++        RETURN_IF_EXCEPTION(scope, );
+         gcUnprotectNullTolerant(object);
+ 
+         exportNames.append(vm.propertyNames->defaultKeyword);
+@@ -66,7 +66,7 @@
+             exportNames.append(entry);
+ 
+             JSValue value = object->get(globalObject, entry);
+-            RETURN_IF_EXCEPTION(scope, {});
++            RETURN_IF_EXCEPTION(scope, );
+             exportValues.append(value);
+         }
+     };
