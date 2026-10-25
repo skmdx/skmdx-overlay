@@ -182,6 +182,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-2.13.0-xnnpack.patch
 	"${FILESDIR}"/${PN}-2.14.0-license.patch
 	"${FILESDIR}"/${PN}-2.14.0-cpp-httplib.patch
+	"${FILESDIR}"/${PN}-2.14.1-quantized-registration.patch
 )
 
 src_prepare() {

@@ -1,0 +1,109 @@
+Initialize quantized parameter classes before inferring kernel schemas.
+ThinLTO can reorder translation-unit constructors. Match the explicit
+registration dependency already used by the quantized linear kernels.
+
+--- a/aten/src/ATen/native/quantized/cpu/qconv.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qconv.cpp
+@@ -11,6 +11,7 @@
+ #include <ATen/TensorOperators.h>
+ #include <ATen/SmallVector.h>
+ #include <ATen/native/quantized/PackedParams.h>
++#include <ATen/native/quantized/library.h>
+ #include <ATen/native/quantized/cpu/fbgemm_utils.h>
+ #include <ATen/native/quantized/cpu/QnnpackUtils.h>
+ #include <ATen/native/quantized/cpu/XnnpackUtils.h>
+@@ -2212,6 +2213,8 @@
+ };
+ 
+ TORCH_LIBRARY_IMPL(quantized, QuantizedCPU, m) {
++  register_conv_params<2>();
++  register_conv_params<3>();
+   m.impl(TORCH_SELECTIVE_NAME("quantized::conv1d"),          QConv1dInt8<false>::run);
+   m.impl(TORCH_SELECTIVE_NAME("quantized::conv1d_relu"),     QConv1dInt8<true>::run);
+   m.impl(TORCH_SELECTIVE_NAME("quantized::conv2d.new"),      QConvInt8<2, false>::run);
+@@ -2235,6 +2238,8 @@
+ }
+ 
+ TORCH_LIBRARY_IMPL(_quantized, QuantizedCPU, m) {
++  register_conv_params<2>();
++  register_conv_params<3>();
+   m.impl(TORCH_SELECTIVE_NAME("_quantized::conv2d"),      QConvInt8<2, false>::run);
+   m.impl(TORCH_SELECTIVE_NAME("_quantized::conv2d_relu"), QConvInt8<2, true>::run);
+ 
+--- a/aten/src/ATen/native/quantized/cpu/qconv_dynamic.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qconv_dynamic.cpp
+@@ -6,6 +6,7 @@
+ #include <ATen/Parallel.h>
+ #include <ATen/SmallVector.h>
+ #include <ATen/native/quantized/PackedParams.h>
++#include <ATen/native/quantized/library.h>
+ #include <ATen/native/quantized/cpu/fbgemm_utils.h>
+ #include <ATen/native/quantized/cpu/QnnpackUtils.h>
+ #include <ATen/native/quantized/cpu/OnednnUtils.h>
+@@ -213,6 +214,8 @@
+ };
+ 
+ TORCH_LIBRARY_IMPL(quantized, CPU, m) {
++  register_conv_params<2>();
++  register_conv_params<3>();
+   m.impl(
+       TORCH_SELECTIVE_NAME("quantized::conv1d_dynamic"),
+       TORCH_FN(QConv1dDynamicInt8::run));
+--- a/aten/src/ATen/native/quantized/cpu/qconv_prepack.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qconv_prepack.cpp
+@@ -6,6 +6,7 @@
+ #include <ATen/core/List.h>
+ #include <ATen/Context.h>
+ #include <ATen/native/quantized/PackedParams.h>
++#include <ATen/native/quantized/library.h>
+ #include <ATen/native/quantized/cpu/fbgemm_utils.h>
+ #include <ATen/native/quantized/cpu/init_qnnpack.h>
+ #include <ATen/native/quantized/cpu/QnnpackUtils.h>
+@@ -844,6 +845,8 @@
+ };
+ 
+ TORCH_LIBRARY_IMPL(quantized, QuantizedCPU, m) {
++  register_conv_params<2>();
++  register_conv_params<3>();
+   // Conv
+   // conv_prepack is deprecated, please use conv2d_prepack for 2D conv.
+   m.impl(TORCH_SELECTIVE_NAME("quantized::conv_prepack"), TORCH_FN(QConvPackWeightInt8<2>::run_conv));
+@@ -857,6 +860,8 @@
+ }
+ 
+ TORCH_LIBRARY_IMPL(_quantized, QuantizedCPU, m) {
++  register_conv_params<2>();
++  register_conv_params<3>();
+   // Conv
+   m.impl(TORCH_SELECTIVE_NAME("_quantized::conv2d_prepack"), TORCH_FN(QConvPackWeightInt8<2>::run_conv));
+   m.impl(TORCH_SELECTIVE_NAME("_quantized::conv3d_prepack"), TORCH_FN(QConvPackWeightInt8<3>::run_conv));
+--- a/aten/src/ATen/native/quantized/cpu/qembeddingbag.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qembeddingbag.cpp
+@@ -1524,6 +1524,7 @@
+ };
+ 
+ TORCH_LIBRARY_IMPL(quantized, CPU, m) {
++  register_embedding_params();
+   // Function that works on TorchBind packed weights.
+   m.impl(
+       TORCH_SELECTIVE_NAME("quantized::embedding_bag_byte"),
+--- a/aten/src/ATen/native/quantized/cpu/qembeddingbag_prepack.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qembeddingbag_prepack.cpp
+@@ -656,6 +656,7 @@
+ }
+ 
+ TORCH_LIBRARY_IMPL(quantized, QuantizedCPU, m) {
++  register_embedding_params();
+   m.impl(
+       TORCH_SELECTIVE_NAME("quantized::embedding_bag_prepack"),
+       TORCH_FN(QEmbeddingPackWeights::run));
+--- a/aten/src/ATen/native/quantized/cpu/qembeddingbag_unpack.cpp
++++ b/aten/src/ATen/native/quantized/cpu/qembeddingbag_unpack.cpp
+@@ -274,6 +274,7 @@
+ }
+ 
+ TORCH_LIBRARY_IMPL(quantized, CatchAll, m) {
++  register_embedding_params();
+   // Unpack the packed embedding_bag weights using TorchBind custom class.
+   // TODO extend to support 4-bit qtensor.
+   m.impl(
