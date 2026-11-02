@@ -1,0 +1,20 @@
+Respect CC and CXX specified as commands, not only absolute paths.
+
+AC_PATH_TOOL ignores a non-absolute value such as CC=clang and searches for
+the default gcc instead. This pairs the wrong compiler with the user's
+flags. AC_CHECK_TOOL preserves supplied commands and still searches for a
+target-prefixed compiler when the variable is unset.
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -337,8 +337,8 @@
+ if test "$HostOS" = "mingw32" -a "$EnableDistroToolchain" = "NO"; then
+     FP_SETUP_WINDOWS_TOOLCHAIN
+ else
+-    AC_PATH_TOOL([CC],[gcc], [clang])
+-    AC_PATH_TOOL([CXX],[g++], [clang++])
++    AC_CHECK_TOOL([CC],[gcc], [clang])
++    AC_CHECK_TOOL([CXX],[g++], [clang++])
+     AC_PATH_TOOL([NM],[nm])
+     # N.B. we don't probe for LD here but instead
+     # do so in FIND_LD to avoid #21778.
