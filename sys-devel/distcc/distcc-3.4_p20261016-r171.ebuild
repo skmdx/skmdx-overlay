@@ -10,7 +10,7 @@ inherit autotools flag-o-matic llvm-r2 prefix python-single-r1 systemd toolchain
 
 DESCRIPTION="Distributed C/C++ and Rust compilation with adaptive scheduling"
 HOMEPAGE="https://github.com/skmdx/distcc"
-DISTCC_COMMIT="fd16c0e03798871cd8c0d2c691eaa237eccbfc4c"
+DISTCC_COMMIT="c2d6a985a003fcb076a85acd024060e58274497e"
 LLVM_WRAPPER_VERSION="23.1.4"
 SRC_URI="
 	https://github.com/skmdx/distcc/archive/${DISTCC_COMMIT}.tar.gz -> ${PF}.tar.gz
