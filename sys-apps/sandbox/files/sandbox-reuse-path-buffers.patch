@@ -1,0 +1,37 @@
+diff --git a/libsandbox/libsandbox.c b/libsandbox/libsandbox.c
+--- a/libsandbox/libsandbox.c
++++ b/libsandbox/libsandbox.c
+@@ -585,9 +585,10 @@ static int check_syscall(sbcontext_t *sbcontext, int sb_nr, const char *func,
+ 	int old_errno = errno;
+ 	int result;
+ 	bool access, debug, verbose, set;
+-	char *absolute_path, *resolved_path;
+-	_cleanup_path_ char *abuf = NULL;
+-	_cleanup_path_ char *rbuf = NULL;
++	/* before_syscall holds sb_lock throughout this check, including logging.
++	 * No caller retains either path after it returns. Reuse storage without
++	 * consulting the application's allocator or consuming its thread stack. */
++	static char absolute_path[PATH_MAX], resolved_path[PATH_MAX];
+ 
+ 	_cleanup_fd_ int trace_dirfd = -1;
+ 	if (trace_pid && (file == NULL || file[0] != '/')) {
+@@ -606,19 +607,11 @@ static int check_syscall(sbcontext_t *sbcontext, int sb_nr, const char *func,
+ 	if (is_symlink_func(sb_nr))
+ 		flags |= AT_SYMLINK_NOFOLLOW;
+ 
+-	absolute_path = abuf = sb_map_path();
+-	if (!absolute_path)
+-		absolute_path = alloca(PATH_MAX);
+-
+ 	if (!sb_abspathat(dirfd, file, absolute_path, PATH_MAX))
+ 		return 1;
+ 
+ 	sb_debug_dyn("absolute_path: %s\n", absolute_path);
+ 
+-	resolved_path = rbuf = sb_map_path();
+-	if (!resolved_path)
+-		resolved_path = alloca(PATH_MAX);
+-
+ 	if (!sb_realpathat(dirfd, file, resolved_path, PATH_MAX,
+ 				flags, is_create(sb_nr)))
+ 		return 1;
