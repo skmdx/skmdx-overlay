@@ -1,0 +1,89 @@
+--- a/lib/fuse_uring.c
++++ b/lib/fuse_uring.c
+@@ -28,6 +28,7 @@
+ #include <linux/sched.h>
+ #include <poll.h>
+ #include <sys/eventfd.h>
++#include <sys/mman.h>
+ 
+ /* Size of command data area in SQE when IORING_SETUP_SQE128 is used */
+ #define FUSE_URING_MAX_SQE128_CMD_DATA 80
+@@ -71,6 +72,7 @@
+  */
+ struct fuse_ring_pool {
+ 	struct fuse_session *se;
++	bool use_numa;
+ 
+ 	/* number of queues */
+ 	size_t nr_queues;
+@@ -96,6 +98,25 @@
+ 	/* pointer to the first queue */
+ 	struct fuse_ring_queue *queues;
+ };
++
++static void *fuse_ring_alloc(struct fuse_ring_pool *ring, size_t size)
++{
++	if (ring->use_numa)
++		return numa_alloc_local(size);
++	void *memory = mmap(NULL, size, PROT_READ | PROT_WRITE,
++			    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
++	return memory == MAP_FAILED ? NULL : memory;
++}
++
++static void fuse_ring_free(struct fuse_ring_pool *ring, void *memory, size_t size)
++{
++	if (!memory)
++		return;
++	if (ring->use_numa)
++		numa_free(memory, size);
++	else
++		munmap(memory, size);
++}
+ 
+ static size_t
+ fuse_ring_queue_size(const size_t q_depth)
+@@ -424,8 +445,8 @@
+ 		for (size_t idx = 0; idx < fuse_ring->queue_depth; idx++) {
+ 			struct fuse_ring_ent *ent = &queue->ent[idx];
+ 
+-			numa_free(ent->op_payload, ent->req_payload_sz);
+-			numa_free(ent->req_header, queue->req_header_sz);
++			fuse_ring_free(fuse_ring, ent->op_payload, ent->req_payload_sz);
++			fuse_ring_free(fuse_ring, ent->req_header, queue->req_header_sz);
+ 		}
+ 
+ 		pthread_mutex_destroy(&queue->ring_lock);
+@@ -535,6 +556,8 @@
+ 	}
+ 
+ 	fuse_ring->se = se;
++	/* No libnuma operations are defined when this capability check fails. */
++	fuse_ring->use_numa = numa_available() >= 0;
+ 	fuse_ring->nr_queues = nr_queues;
+ 	fuse_ring->queue_depth = se->uring.q_depth;
+ 	fuse_ring->max_req_payload_sz = payload_sz;
+@@ -550,7 +573,7 @@
+ 			fuse_uring_get_queue(fuse_ring, qid);
+ 
+ 		queue->ring.ring_fd = -1;
+-		queue->numa_node = numa_node_of_cpu(qid);
++		queue->numa_node = fuse_ring->use_numa ? numa_node_of_cpu(qid) : 0;
+ 		queue->qid = qid;
+ 		queue->ring_pool = fuse_ring;
+ 		queue->eventfd = -1;
+@@ -781,13 +804,13 @@
+ 		 * is a requirement for page pinning
+ 		 */
+ 		ring_ent->req_header =
+-			numa_alloc_local(queue->req_header_sz);
++			fuse_ring_alloc(ring, queue->req_header_sz);
+ 		if (!ring_ent->req_header)
+ 			return -ENOMEM;
+ 		ring_ent->req_payload_sz = ring->max_req_payload_sz;
+ 
+ 		ring_ent->op_payload =
+-			numa_alloc_local(ring_ent->req_payload_sz);
++			fuse_ring_alloc(ring, ring_ent->req_payload_sz);
+ 		if (!ring_ent->op_payload)
+ 			return -ENOMEM;
+ 
