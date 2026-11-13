@@ -71,6 +71,7 @@ PATCHES=(
 	"${FILESDIR}/${PN}-3.0-xinetd.patch"
 	# SOCKSv5 support needed for Portage, bug #537616
 	"${FILESDIR}/${PN}-3.2_rc1-socks5.patch"
+	"${FILESDIR}/${PN}-3.4-test-contracts.patch"
 )
 
 src_unpack() {
@@ -199,7 +200,19 @@ src_test() {
 	# sandbox breaks some tests, and hangs some too
 	# retest once #590084 is fixed
 	local -x SANDBOX_ON=0
-	emake -j1 check
+	# Tests launch their own distcc clients/workers around the real compiler.
+	local test_path=":${PATH}:"
+	test_path=${test_path//":${EPREFIX}/usr/lib/distcc/bin:"/:}
+	local -x PATH=${test_path:1:-1}
+	# AF_UNIX addresses in integration fixtures must fit sockaddr_un.
+	local test_tmp
+	test_tmp=$(mktemp -d "${PORTAGE_TMPDIR}/dct.XXXXXX") || die
+	local -x TMPDIR=${test_tmp}
+	local result=0
+	# Use make directly so cleanup also runs when a test fails.
+	make -j1 check || result=$?
+	rm -rf -- "${test_tmp}" || die
+	[[ ${result} == 0 ]] || die "distcc tests failed (${result})"
 }
 
 src_install() {
