@@ -199,6 +199,9 @@ src_test() {
 	# sandbox breaks some tests, and hangs some too
 	# retest once #590084 is fixed
 	local -x SANDBOX_ON=0
+	# Fixtures launch a fresh sandbox with their own read/write policy.
+	local SANDBOX_ACTIVE
+	unset SANDBOX_ACTIVE
 	# Tests launch their own distcc clients/workers around the real compiler.
 	local test_path=":${PATH}:"
 	test_path=${test_path//":${EPREFIX}/usr/lib/distcc/bin:"/:}
