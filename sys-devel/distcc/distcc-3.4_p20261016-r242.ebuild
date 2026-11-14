@@ -10,7 +10,7 @@ inherit autotools flag-o-matic llvm-r2 prefix python-single-r1 systemd tmpfiles 
 
 DESCRIPTION="Distributed C/C++ and Rust compilation with adaptive scheduling"
 HOMEPAGE="https://github.com/skmdx/distcc"
-DISTCC_COMMIT="8489472d34a018808fc2c437f33d0831c514e416"
+DISTCC_COMMIT="046c6b80a13a9d2c05c38574f5579d5215b043d8"
 LLVM_WRAPPER_VERSION="23.1.4"
 SRC_URI="
 	https://github.com/skmdx/distcc/archive/${DISTCC_COMMIT}.tar.gz -> ${PF}.tar.gz
@@ -71,7 +71,6 @@ PATCHES=(
 	"${FILESDIR}/${PN}-3.0-xinetd.patch"
 	# SOCKSv5 support needed for Portage, bug #537616
 	"${FILESDIR}/${PN}-3.2_rc1-socks5.patch"
-	"${FILESDIR}/${PN}-3.4-test-contracts.patch"
 )
 
 src_unpack() {
@@ -204,6 +203,9 @@ src_test() {
 	local test_path=":${PATH}:"
 	test_path=${test_path//":${EPREFIX}/usr/lib/distcc/bin:"/:}
 	local -x PATH=${test_path:1:-1}
+	# Exercise the module built above, not an older installed package.
+	local -x DISTCC_GCC_SCAN_LIBRARY="${T}/gcc-modules/$(gcc -dumpmachine)/$(gcc -dumpfullversion)/distcc_gcc_scan.so"
+	[[ -f ${DISTCC_GCC_SCAN_LIBRARY} ]] || die "Missing GCC test module"
 	# AF_UNIX addresses in integration fixtures must fit sockaddr_un.
 	local test_tmp
 	test_tmp=$(mktemp -d "${PORTAGE_TMPDIR}/dct.XXXXXX") || die
