@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="project">
+		<email>haskell@gentoo.org</email>
+		<name>Gentoo Haskell</name>
+	</maintainer>
+	<use>
+		<flag name="disable-stack-upload">For use only during development and debugging. Disable &#39;stack upload&#39; so that it does not make HTTP requests. Stack will output information about the HTTP request(s) that it would have made if the command was enabled.</flag>
+	</use>
+	<upstream>
+		<remote-id type="hackage">stack</remote-id>
+		<remote-id type="github">commercialhaskell/stack</remote-id>
+	</upstream>
+</pkgmetadata>
