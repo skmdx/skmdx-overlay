@@ -1,0 +1,24 @@
+Include the standard header that declares std::fill, rather than relying on
+transitive includes from a particular C++ standard library.
+
+--- a/src/stc/scintilla/src/SplitVector.h
++++ b/src/stc/scintilla/src/SplitVector.h
+@@ -8,6 +8,8 @@
+ #ifndef SPLITVECTOR_H
+ #define SPLITVECTOR_H
+ 
++#include <algorithm>
++
+ #ifdef __GNUC__
+ #if __GNUC__ >= 13
+ #pragma GCC diagnostic push
+--- a/src/stc/scintilla/src/XPM.cxx
++++ b/src/stc/scintilla/src/XPM.cxx
+@@ -8,6 +8,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#include <algorithm>
+ #include <stdexcept>
+ #include <vector>
+ #include <map>
