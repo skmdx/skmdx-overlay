@@ -1,0 +1,25 @@
+The C++ bindings store std::exception_ptr and call std::current_exception.
+Include their defining header explicitly instead of relying on transitive
+includes from functional or stdexcept. Keep the distributed bindings and
+their generator template in sync.
+
+--- a/cpp/cpp.h.top
++++ b/cpp/cpp.h.top
+@@ -11,6 +11,7 @@
+ #include <isl/ctx.h>
+ #include <isl/options.h>
+ 
++#include <exception>
+ #include <functional>
+ #include <memory>
+ #include <ostream>
+--- a/include/isl/cpp.h
++++ b/include/isl/cpp.h
+@@ -11,6 +11,7 @@
+ #include <isl/ctx.h>
+ #include <isl/options.h>
+ 
++#include <exception>
+ #include <functional>
+ #include <memory>
+ #include <ostream>
