@@ -1,0 +1,21 @@
+Include the standard header owning the C++20 bit operations instead of
+depending on implementation-specific transitive standard library includes.
+
+--- a/taskflow/core/wsq.hpp
++++ b/taskflow/core/wsq.hpp
+@@ -1,4 +1,6 @@
+ #pragma once
+ 
++#include <bit>
++
+ #include "../utility/macros.hpp"
+ #include "../utility/traits.hpp"
+--- a/taskflow/core/executor.hpp
++++ b/taskflow/core/executor.hpp
+@@ -1,4 +1,6 @@
+ #pragma once
+ 
++#include <bit>
++
+ #include "observer.hpp"
+ #include "taskflow.hpp"
