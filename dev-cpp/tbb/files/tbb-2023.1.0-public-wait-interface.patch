@@ -1,0 +1,37 @@
+The runtime returns wait-tree vertices to clients and calls their parent
+vertices through this interface.  The hierarchy therefore crosses DSO/LTO
+boundaries: hidden visibility permits incorrect whole-program devirtualization
+of a client's wait_context_vertex as a runtime thread_reference_vertex.
+Use the existing export attribute to keep this shared interface public.
+
+--- a/include/oneapi/tbb/detail/_task.h
++++ b/include/oneapi/tbb/detail/_task.h
+@@ -44,7 +44,7 @@
+ class wait_context;
+ class task_group_context;
+ struct execution_data;
+-class wait_tree_vertex_interface;
++class __TBB_EXPORT wait_tree_vertex_interface;
+ class task_arena_base;
+ }
+ 
+@@ -156,7 +156,9 @@
+     }
+ };
+ 
+-class wait_tree_vertex_interface {
++// Both the runtime and its clients provide vertices in this hierarchy.
++// Preserve public LTO visibility across the shared-library boundary.
++class __TBB_EXPORT wait_tree_vertex_interface {
+ public:
+     virtual void reserve(std::uint32_t delta = 1) = 0;
+     virtual void release(std::uint32_t delta = 1) = 0;
+@@ -165,7 +167,7 @@
+     virtual ~wait_tree_vertex_interface() = default;
+ };
+ 
+-class wait_context_vertex : public wait_tree_vertex_interface {
++class __TBB_EXPORT wait_context_vertex : public wait_tree_vertex_interface {
+ public:
+     wait_context_vertex(std::uint32_t ref = 0) : m_wait(ref) {}
+ 
