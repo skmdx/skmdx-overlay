@@ -186,11 +186,6 @@ multilib_src_install() {
 			# http://permalink.gmane.org/gmane.linux.bluez.kernel/53115
 			# http://comments.gmane.org/gmane.linux.bluez.kernel/54564
 			dobin tools/btmgmt
-			# gatttool is only built with readline, bug #530776
-			# https://bugzilla.redhat.com/show_bug.cgi?id=1141909
-			# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=720486
-			# https://bugs.archlinux.org/task/37686
-			dobin attrib/gatttool
 			# https://bugzilla.redhat.com/show_bug.cgi?id=1699680
 			dobin tools/avinfo
 		fi
