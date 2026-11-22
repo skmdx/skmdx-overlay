@@ -10,7 +10,7 @@ inherit autotools flag-o-matic llvm-r2 prefix python-single-r1 systemd tmpfiles 
 
 DESCRIPTION="Distributed C/C++ and Rust compilation with adaptive scheduling"
 HOMEPAGE="https://github.com/skmdx/distcc"
-DISTCC_COMMIT="d63786f87dd02979f4dd7a2b8c31f41efcb832dd"
+DISTCC_COMMIT="b5e938a4560f4a8456688dbc75635689ca9a1f1c"
 LLVM_WRAPPER_VERSION="23.1.4"
 SRC_URI="
 	https://github.com/skmdx/distcc/archive/${DISTCC_COMMIT}.tar.gz -> ${PF}.tar.gz
@@ -125,7 +125,7 @@ src_prepare() {
 		"${FILESDIR}/distcc-config-r1" > "${T}/distcc-config" || die
 
 	hprefixify update-distcc-symlinks.py src/{serve,daemon}.c
-	python_fix_shebang distcc-link distcc-clang distcc-thinlto distcc-offload distcc-offload-link \
+	python_fix_shebang distcc-link distcc-clang distcc-multi distcc-thinlto distcc-offload distcc-offload-link \
 		update-distcc-symlinks.py "${T}/distcc-config" \
 		packaging/systemd/distccd-memory.py
 	eautoreconf
@@ -236,7 +236,7 @@ src_install() {
 	distcc_emake -j1 DESTDIR="${D}" GZIP_BIN=false LTO_TARGETS= install
 	# Helpers import modules beside their scripts; precompile those too so
 	# compiler invocations do not write bytecode outside the build sandbox.
-	python_optimize "${D}$(python_get_sitedir)" "${ED}/usr/bin"
+	python_optimize "${D}$(python_get_sitedir)" "${ED}/usr/libexec/distcc"
 	local module directory bindir headers target slot version
 	for slot in "${LLVM_COMPAT[@]}"; do
 		directory=$("${T}/llvm-config-${slot}" --libdir) || die
