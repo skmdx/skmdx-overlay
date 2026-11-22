@@ -10,7 +10,7 @@ inherit autotools flag-o-matic llvm-r2 prefix python-single-r1 systemd tmpfiles 
 
 DESCRIPTION="Distributed C/C++ and Rust compilation with adaptive scheduling"
 HOMEPAGE="https://github.com/skmdx/distcc"
-DISTCC_COMMIT="45bcdab2184c758beba090a9eb3b1e994aa1fad6"
+DISTCC_COMMIT="bac4990995306653e45435c9e247b84f3a02a1aa"
 LLVM_WRAPPER_VERSION="23.1.4"
 SRC_URI="
 	https://github.com/skmdx/distcc/archive/${DISTCC_COMMIT}.tar.gz -> ${PF}.tar.gz
@@ -102,6 +102,7 @@ src_unpack() {
 	tar --occurrence -xJf "${DISTDIR}/llvm-project-${LLVM_WRAPPER_VERSION}.src.tar.xz" \
 		"llvm-project-${LLVM_WRAPPER_VERSION}.src/clang/tools/clang-linker-wrapper/ClangLinkerWrapper.cpp" \
 		"llvm-project-${LLVM_WRAPPER_VERSION}.src/clang/tools/clang-linker-wrapper/LinkerWrapperOpts.td" \
+		"llvm-project-${LLVM_WRAPPER_VERSION}.src/lld/ELF/Options.td" \
 		"llvm-project-${LLVM_WRAPPER_VERSION}.src/llvm/lib/Transforms/Utils/SplitModule.cpp" &
 	pids+=( "$!" )
 	for source in "${!archives[@]}"; do
