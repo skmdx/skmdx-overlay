@@ -10,7 +10,7 @@ inherit autotools flag-o-matic llvm-r2 prefix python-single-r1 systemd tmpfiles 
 
 DESCRIPTION="Distributed C/C++ and Rust compilation with adaptive scheduling"
 HOMEPAGE="https://github.com/skmdx/distcc"
-DISTCC_COMMIT="8a117fbab93a0b3c0254e89016e9c30120d18ced"
+DISTCC_COMMIT="45bcdab2184c758beba090a9eb3b1e994aa1fad6"
 LLVM_WRAPPER_VERSION="23.1.4"
 SRC_URI="
 	https://github.com/skmdx/distcc/archive/${DISTCC_COMMIT}.tar.gz -> ${PF}.tar.gz
@@ -56,7 +56,6 @@ DEPEND="
 "
 BDEPEND="
 	${PYTHON_DEPS}
-	$(python_gen_cond_dep 'dev-python/setuptools[${PYTHON_USEDEP}]')
 	dev-build/autoconf-archive
 	virtual/pkgconfig
 	test? ( sys-devel/gcc )
@@ -108,7 +107,6 @@ src_unpack() {
 	for source in "${!archives[@]}"; do
 		tar --occurrence -xJf "${DISTDIR}/${source}.tar.xz" \
 			"${source}"/gcc/{BASE-VER,DATESTAMP,intl.h} \
-			"${source}"/gcc/c-family/{c-target.h,c-target.def} \
 			"${source}"/libcpp/{files.cc,internal.h} \
 			"${source}"/libcpp/include/{cpplib.h,mkdeps.h} &
 		pids+=( "$!" )
@@ -125,7 +123,7 @@ src_prepare() {
 		"${FILESDIR}/distcc-config-r1" > "${T}/distcc-config" || die
 
 	hprefixify update-distcc-symlinks.py src/{serve,daemon}.c
-	python_fix_shebang distcc-link distcc-clang distcc-multi distcc-thinlto distcc-offload distcc-offload-link \
+	python_fix_shebang distcc-link distcc-multi distcc-thinlto distcc-offload distcc-offload-link \
 		update-distcc-symlinks.py "${T}/distcc-config" \
 		packaging/systemd/distccd-memory.py
 	eautoreconf
@@ -148,18 +146,6 @@ src_configure() {
 		fi
 	done
 	tc-export CC CXX
-	if tc-is-cross-compiler; then
-		local includedir
-		includedir=$(python_get_includedir) || die
-		append-cppflags "-I${includedir}"
-		local configs=( "${ESYSROOT}/usr/lib/${EPYTHON}"/_sysconfigdata_*.py )
-		[[ ${#configs[@]} -eq 1 && -f ${configs[0]} ]] ||
-			die "Expected one target Python sysconfig module"
-		mkdir -p "${T}/python-sysconfig" || die
-		ln -s "${configs[0]}" "${T}/python-sysconfig/distcc_target_sysconfig.py" || die
-	fi
-	# https://github.com/distcc/distcc/issues/454
-	append-cppflags -DPY_SSIZE_T_CLEAN
 
 	local myconf=(
 		--disable-Werror
@@ -169,29 +155,19 @@ src_configure() {
 		--without-gnome
 		$(use_with gssapi auth)
 		$(use_with zeroconf avahi)
-
-		--enable-pump-mode
 	)
 
 	econf "${myconf[@]}"
 }
 
 distcc_emake() {
-	local python_args=()
 	# Portage removes DISTCC_* from the environment saved between phases.
 	local slot
 	local -x DISTCC_CLANG_CONFIGS=
 	for slot in "${LLVM_COMPAT[@]}"; do
 		DISTCC_CLANG_CONFIGS+="${DISTCC_CLANG_CONFIGS:+:}${T}/llvm-config-${slot}"
 	done
-	if tc-is-cross-compiler; then
-		# Keep the target configuration out of Portage's own Python helpers.
-		python_args+=(
-			"_PYTHON_SYSCONFIGDATA_NAME=distcc_target_sysconfig"
-			"PYTHONPATH=${T}/python-sysconfig${PYTHONPATH:+:${PYTHONPATH}}"
-		)
-	fi
-	emake "LTO_BUILD=llvm-lto-${LLVM_SLOT}" "${python_args[@]}" "$@"
+	emake "LTO_BUILD=llvm-lto-${LLVM_SLOT}" "$@"
 }
 
 src_compile() {
@@ -202,7 +178,7 @@ src_compile() {
 	done
 	tc-is-cross-compiler && module_cxx+=" --sysroot=${ESYSROOT}"
 	while read -r compiler headers source; do
-		"${PYTHON}" include_server/build_gcc_scan.py --gcc "${compiler}" \
+		"${PYTHON}" src/build_gcc_scan.py --gcc "${compiler}" \
 			--source "${WORKDIR}/${source}" --plugin-headers "${headers}" \
 			--cxx "${module_cxx}" --output "${T}/gcc-modules" || die
 	done < "${T}/gcc-modules.list"
@@ -236,16 +212,12 @@ src_install() {
 	distcc_emake -j1 DESTDIR="${D}" GZIP_BIN=false LTO_TARGETS= install
 	# Helpers import modules beside their scripts; precompile those too so
 	# compiler invocations do not write bytecode outside the build sandbox.
-	python_optimize "${D}$(python_get_sitedir)" "${ED}/usr/libexec/distcc"
-	local module directory bindir headers target slot version
+	python_optimize "${ED}/usr/libexec/distcc"
+	[[ -x ${ED}/usr/libexec/distcc/distcc-clang ]] || die "Missing Clang launcher"
+	local module directory headers target slot version
 	for slot in "${LLVM_COMPAT[@]}"; do
-		directory=$("${T}/llvm-config-${slot}" --libdir) || die
-		bindir=$("${T}/llvm-config-${slot}" --bindir) || die
-		distcc_emake DESTDIR="${D}" LLVM_CONFIG="${T}/llvm-config-${slot}" \
-			LTO_BUILD="llvm-lto-${slot}" LTO_LIBDIR="${directory#"${ESYSROOT}"}/distcc" \
-			LTO_BINDIR="${bindir#"${ESYSROOT}"}" install-lto
-		local modules=( "${D}$(python_get_sitedir)/include_server/clang${slot}"/clang_compile*.so )
-		[[ ${#modules[@]} -eq 1 && -f ${modules[0]} ]] ||
+		distcc_emake DESTDIR="${D}" LLVM_CONFIG="${T}/llvm-config-${slot}" LTO_BUILD="llvm-lto-${slot}" install-lto
+		[[ -L ${ED}/usr/libexec/distcc/distcc-clang-${slot} && -x ${ED}/usr/libexec/distcc/distcc-clang-${slot} ]] ||
 			die "Missing LLVM ${slot} worker frontend"
 	done
 	while IFS= read -r -d '' module; do
@@ -279,7 +251,6 @@ src_install() {
 	doexe packaging/systemd/distccd-memory.py
 	insinto /usr/share/distcc
 	doins packaging/systemd/distccd-memory.conf
-	newins packaging/gentoo/pump.bashrc portage-pump.bashrc
 	newins packaging/gentoo/jobs.bashrc portage-jobs.bashrc
 
 	cp "${FILESDIR}/distccd.confd" "${T}/distccd" || die
@@ -303,8 +274,6 @@ src_install() {
 		DISTCC_TCP_CORK="${DISTCC_TCP_CORK}"
 		DISTCC_SSH="${DISTCC_SSH}"
 		UNCACHED_ERR_FD="${UNCACHED_ERR_FD}"
-		DISTCC_ENABLE_DISCREPANCY_EMAIL="${DISTCC_ENABLE_DISCREPANCY_EMAIL}"
-		DCC_EMAILLOG_WHOM_TO_BLAME="${DCC_EMAILLOG_WHOM_TO_BLAME}"
 	EOF
 
 	keepdir /usr/lib/distcc
@@ -351,11 +320,8 @@ pkg_postinst() {
 	elog "Tips on using distcc with Gentoo can be found at"
 	elog "https://wiki.gentoo.org/wiki/Distcc"
 	elog
-	elog "Run builds under pump to distribute preprocessing and standalone -E calls."
-	elog "Pump reuses DISTCC_BROKER; without a broker use ,cpp,lzo host options."
-	elog "Use ,tcp on broker hosts for prepared jobs and shared input caching."
-	elog "Update all clients and workers together before enabling ,tcp."
-	elog "Compiler versions and target ABI must match; pump transfers client system headers."
+	elog "Source /usr/share/distcc/portage-jobs.bashrc from /etc/portage/bashrc."
+	elog "Use DISTCC_FRONTEND_REMOTE=1 and ,tcp broker hosts for distributed compiler frontends."
 	elog
 	elog "Adaptive scheduling: enable --stats on each distccd, then add"
 	elog "stats=3633,speed=FACTOR to each TCP host in /etc/distcc/hosts."
