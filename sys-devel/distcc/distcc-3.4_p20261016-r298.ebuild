@@ -10,7 +10,7 @@ inherit autotools flag-o-matic llvm-r2 prefix python-single-r1 systemd tmpfiles 
 
 DESCRIPTION="Distributed C/C++ and Rust compilation with adaptive scheduling"
 HOMEPAGE="https://github.com/skmdx/distcc"
-DISTCC_COMMIT="64f5d3bc794b1fc053066d3a3d8a2de91c20a24a"
+DISTCC_COMMIT="cf5c282a36140aa7442899c2d768641ce5284d53"
 LLVM_WRAPPER_VERSION="23.1.4"
 SRC_URI="
 	https://github.com/skmdx/distcc/archive/${DISTCC_COMMIT}.tar.gz -> ${PF}.tar.gz
@@ -322,14 +322,18 @@ pkg_postinst() {
 	elog "https://wiki.gentoo.org/wiki/Distcc"
 	elog
 	elog "Source /usr/share/distcc/portage-jobs.bashrc from /etc/portage/bashrc."
-	elog "Use DISTCC_FRONTEND_REMOTE=1 and ,tcp broker hosts for distributed compiler frontends."
+	elog "Remote compiler frontends are enabled by default with ,tcp broker hosts."
+	elog "Clang library reuse, parallel codegen and Linux memory learning also default to on."
+	elog "Set DISTCC_FRONTEND_REMOTE=0, DISTCC_CLANG_LOCAL=0, DISTCC_CLANG_CODEGEN=0"
+	elog "or DISTCC_MEMORY_LEARNING=0 to disable the corresponding feature."
+	elog 'The client discovers its private per-user broker by default. Set DISTCC_BROKER="" to opt out.'
 	elog
 	elog "Adaptive scheduling: enable --stats on each distccd, then add"
 	elog "stats=3633,speed=FACTOR to each TCP host in /etc/distcc/hosts."
 	elog "CPU counts and live load are fetched automatically; speed is relative per-core throughput."
 	elog "Workers limit compile and link admission using available memory and memory pressure."
 	elog "DISTCC_JOB_MEMORY sets the estimated memory per job in MiB (default 1024)."
-	elog "Broker clients preprocess before reserving workers and bound failed remote attempts."
+	elog "Classic jobs preprocess before reserving workers. Broker clients bound failed remote attempts."
 	elog "Use distcc -j to obtain the discovered concurrency limit."
 	elog
 	elog "To use the distccmon programs with Gentoo you should use this command:"
